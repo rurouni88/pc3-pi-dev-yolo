@@ -1,0 +1,19 @@
+FROM node:24-bookworm-slim
+
+# Install essential developer tools + fd-find natively
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    bash \
+    ca-certificates \
+    git \
+    ripgrep \
+    fd-find \
+    && rm -rf /var/lib/apt/lists/*
+
+# Map Debian's 'fdfind' binary name to standard 'fd' so Pi recognizes it
+RUN ln -s /usr/bin/fdfind /usr/bin/fd
+
+# Install the agent
+RUN npm install -g --ignore-scripts @earendil-works/pi-coding-agent
+
+WORKDIR /workspace
+ENTRYPOINT ["pi"]

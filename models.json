@@ -1,0 +1,21 @@
+{
+  "providers": {
+    "local-docker": {
+      "baseUrl": "http://host.docker.internal:12434/v1",
+      "api": "openai-completions",
+      "apiKey": "none",
+      "models": [
+        {
+          "id": "docker.io/ai/gemma4:e2b-q4_K_M",
+          "contextWindow": 128000,
+          "input": ["text"]
+        },
+        {
+          "id": "docker.io/ai/gemma4:e4b-q4_K_M",
+          "contextWindow": 128000,
+          "input": ["text"]
+        }
+      ]
+    }
+  }
+}
