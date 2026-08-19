@@ -199,78 +199,15 @@ function detectInjection(text: string): DetectionResult {
     return { matchedPatterns: [], score: 0, severity: "low", recommendations: [] };
   }
 
+  const decodedVariants = decodeObfuscations(text);
+  const textVariants = [text, ...decodedVariants];
+
   const matchedPatterns: InjectionPattern[] = [];
   let totalScore = 0;
 
-  // ── Decode common obfuscation layers before scanning ──
-  let decodedTexts: string[] = [text];
-
-  // 1. Try raw base64 decode
-  const base64Regex = /^[A-Za-z0-9+/=]{20,}$/;
-  if (base64Regex.test(text.trim())) {
-    try {
-      const decoded = Buffer.from(text.trim(), "base64").toString("utf-8");
-      if (decoded.length > 0 && decoded.length <= text.length * 3 && /\w/.test(decoded)) {
-        decodedTexts.push(decoded);
-      }
-    } catch {
-      // Not valid base64, skip
-    }
-  }
-
-  // 2. Try URL decode
-  try {
-    const urlDecoded = decodeURIComponent(text);
-    if (urlDecoded !== text) {
-      decodedTexts.push(urlDecoded);
-    }
-  } catch {
-    // Not valid URL encoding, skip
-  }
-
-  // 3. Try double URL decode
-  for (const decoded of decodedTexts) {
-    try {
-      const doubleDecoded = decodeURIComponent(decoded);
-      if (doubleDecoded !== decoded) {
-        decodedTexts.push(doubleDecoded);
-      }
-    } catch {
-      // skip
-    }
-  }
-
-  // 4. Try HTML entity decode
-  const htmlEntityRegex = /&#?[a-zA-Z0-9]+;/;
-  if (htmlEntityRegex.test(text)) {
-    let htmlDecoded = text
-      .replace(/&lt;/g, "<")
-      .replace(/&gt;/g, ">")
-      .replace(/&amp;/g, "&")
-      .replace(/&quot;/g, '"')
-      .replace(/&#39;/g, "'")
-      .replace(/&#x27;/g, "'")
-      .replace(/&#60;/g, "<")
-      .replace(/&#62;/g, ">")
-      .replace(/&#38;/g, "&");
-    if (htmlDecoded !== text) {
-      decodedTexts.push(htmlDecoded);
-    }
-  }
-
-  // Scan the original text
-  for (const pattern of INJECTION_PATTERNS) {
-    if (pattern.pattern.test(text)) {
-      matchedPatterns.push(pattern);
-      totalScore += SEVERITY_WEIGHTS[pattern.severity];
-    }
-  }
-
-  // Scan all decoded variants
-  for (const decoded of decodedTexts) {
+  for (const variant of textVariants) {
     for (const pattern of INJECTION_PATTERNS) {
-      if (pattern.pattern.test(decoded)) {
-        // Avoid double-counting the same pattern match on the same text
+      if (pattern.pattern.test(variant)) {
         if (!matchedPatterns.includes(pattern)) {
           matchedPatterns.push(pattern);
           totalScore += SEVERITY_WEIGHTS[pattern.severity];
@@ -311,6 +248,61 @@ function detectInjection(text: string): DetectionResult {
 // ──────────────────────────────────────────────
 
 /**
+ * Decode common obfuscation layers and return variants for scanning.
+ * Guard against untrusted input by limiting decoded size.
+ */
+function decodeObfuscations(text: string): string[] {
+  const variants: string[] = [];
+
+  // Base64 decode
+  const base64Regex = /^[A-Za-z0-9+/=]{20,}$/;
+  if (base64Regex.test(text.trim())) {
+    try {
+      const decoded = Buffer.from(text.trim(), "base64").toString("utf-8");
+      if (decoded.length > 0 && decoded.length <= text.length * 3 && /\w/.test(decoded)) {
+        variants.push(decoded);
+      }
+    } catch {
+      // Not valid base64
+    }
+  }
+
+  // URL decode (single and double)
+  try {
+    const singleDecoded = decodeURIComponent(text);
+    if (singleDecoded !== text) {
+      variants.push(singleDecoded);
+      const doubleDecoded = decodeURIComponent(singleDecoded);
+      if (doubleDecoded !== singleDecoded) {
+        variants.push(doubleDecoded);
+      }
+    }
+  } catch {
+    // Not valid URL encoding
+  }
+
+  // HTML entity decode
+  const htmlEntityRegex = /&#?[a-zA-Z0-9]+;/;
+  if (htmlEntityRegex.test(text)) {
+    const htmlDecoded = text
+      .replace(/&lt;/g, "<")
+      .replace(/&gt;/g, ">")
+      .replace(/&amp;/g, "&")
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      .replace(/&#x27;/g, "'")
+      .replace(/&#60;/g, "<")
+      .replace(/&#62;/g, ">")
+      .replace(/&#38;/g, "&");
+    if (htmlDecoded !== text) {
+      variants.push(htmlDecoded);
+    }
+  }
+
+  return variants;
+}
+
+/**
  * Extract all text content from a session message
  */
 function extractTextFromMessage(
@@ -335,24 +327,12 @@ function extractTextFromMessage(
 export default function (pi: ExtensionAPI) {
   // Configuration
   const config = {
-    // Auto-block on critical severity
     autoBlockCritical: true,
-    // Auto-block on high severity
     autoBlockHigh: false,
-    // Log all detections to console
     verboseLogging: true,
-    // Maximum allowed score (0 = deny all detections)
     maxAllowedScore: 3,
-    // Custom patterns the user wants to add
-    customPatterns: [] as InjectionPattern[],
   };
 
-  // Combine with user custom patterns
-  const allPatterns = [...INJECTION_PATTERNS, ...config.customPatterns];
-
-  /**
-   * Analyze text and return detection result
-   */
   function analyzeAndLog(text: string, source: string): DetectionResult {
     const result = detectInjection(text);
 
@@ -369,9 +349,6 @@ export default function (pi: ExtensionAPI) {
     return result;
   }
 
-  /**
-   * Check if input should be blocked
-   */
   function shouldBlock(result: DetectionResult): boolean {
     if (result.severity === "critical" && config.autoBlockCritical) return true;
     if (result.severity === "high" && config.autoBlockHigh) return true;
@@ -379,11 +356,6 @@ export default function (pi: ExtensionAPI) {
     return false;
   }
 
-  // ──────────────────────────────────────────────
-  // EVENT: input
-  // ── Intercepts all user messages before they reach the LLM
-  // ── Covers: interactive typing, RPC/API calls, skill/template expansions
-  // ──────────────────────────────────────────────
   pi.on("input", async (event, ctx) => {
     // Skip extension-injected messages (caught by context event instead)
     if (event.source === "extension") {
@@ -417,11 +389,6 @@ export default function (pi: ExtensionAPI) {
     return { action: "continue" };
   });
 
-  // ──────────────────────────────────────────────
-  // EVENT: before_agent_start
-  // ── Last line of defense before the LLM sees anything
-  // ── Double-checks the prompt and system prompt
-  // ──────────────────────────────────────────────
   pi.on("before_agent_start", async (event, ctx) => {
     // Check the prompt itself
     if (event.prompt && event.prompt.trim().length > 0) {
@@ -454,12 +421,6 @@ export default function (pi: ExtensionAPI) {
     return undefined;
   });
 
-  // ──────────────────────────────────────────────
-  // EVENT: context
-  // ── Catches injected content in conversation history
-  // ── Fires before each LLM call with all messages
-  // ── Catches: skill/template expansions, RPC messages, injected assistant messages
-  // ──────────────────────────────────────────────
   pi.on("context", async (event, ctx) => {
     const messages = event.messages;
     let anyBlocked = false;
@@ -523,11 +484,6 @@ export default function (pi: ExtensionAPI) {
     return undefined;
   });
 
-  // ──────────────────────────────────────────────
-  // EVENT: tool_call
-  // ── Scans tool *inputs* (not just results)
-  // ── Catches: LLM being tricked into running malicious commands
-  // ──────────────────────────────────────────────
   pi.on("tool_call", async (event, ctx) => {
     // Scan bash commands for injection patterns
     if (event.toolName === "bash") {
@@ -579,11 +535,6 @@ export default function (pi: ExtensionAPI) {
     return undefined;
   });
 
-  // ──────────────────────────────────────────────
-  // EVENT: tool_result
-  // ── Intercepts tool results that could contain injection payloads
-  // ── Catches: malicious output from external APIs, code execution, etc.
-  // ──────────────────────────────────────────────
   pi.on("tool_result", async (event, ctx) => {
     const content = event.content
       .filter((c) => c.type === "text")
@@ -609,16 +560,12 @@ export default function (pi: ExtensionAPI) {
     return undefined;
   });
 
-  // ── Event: session_start ──
-  // Notify user that the guard is active
   pi.on("session_start", async (_event, ctx) => {
     if (ctx.hasUI) {
       ctx.ui.notify("🛡️ Prompt Injection Guard is active", "info");
     }
   });
 
-  // ── Custom tool: scan-text ──
-  // Allows the LLM to manually scan text for injection patterns
   pi.registerTool({
     name: "scan_for_injection",
     label: "Scan for Injection",

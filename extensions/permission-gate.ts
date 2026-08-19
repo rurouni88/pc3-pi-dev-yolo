@@ -18,17 +18,30 @@ import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 
 const dangerousPatterns = [/\brm\s+(-rf?|--recursive)/i, /\bsudo\b/i, /\b(chmod|chown)\b.*777/i];
 
+// Exported for testing only
+export { getRelativePath, isWhitelisted, dangerousPatterns };
+export { approvedPaths, approvePath, resetSession };
+// ──────────────────────────────────────────────────────────────────────
+
 // ── Whitelist: absolute folder paths that bypass the permission prompt ─
 // Files in these folders (or subfolders) won't trigger a confirmation.
-const whitelistFolders: string[] = [
-	process.env.HOME ? `${process.env.HOME}/Dev/GIT/pc3-pi-dev-yolo` : "",
-	process.env.HOME ? `${process.env.HOME}/.pi/agent/extensions` : "",
-];
+const homeDir = process.env.HOME;
+const whitelistFolders: string[] = homeDir
+	? [
+			`${homeDir}/Dev/GIT/pc3-pi-dev-yolo`,
+			`${homeDir}/.pi/agent/extensions`,
+	  ]
+	: [];
 // ──────────────────────────────────────────────────────────────────────
 
 // ── Session-scoped permission cache ──
 // Stores approved paths for the duration of the session.
 const approvedPaths = new Set<string>();
+
+// Reset the session cache (exported for test isolation)
+function resetSession(): void {
+	approvedPaths.clear();
+}
 // ──────────────────────────────────────────────────────────────────────
 
 function getRelativePath(path: string, cwd: string): string {
@@ -54,16 +67,10 @@ function approvePath(path: string): void {
 }
 
 export default function (pi: ExtensionAPI) {
-	// ── session_start: optional notification that session permissions are active ──
-	// (keeps the cache alive for the session; no action needed since it's in-memory)
-	// ──────────────────────────────────────────────────────────────────────
-
-	// ── session_shutdown: clear the cache when session ends ──
+	// Clear session cache when session ends
 	pi.on("session_shutdown", async () => {
 		approvedPaths.clear();
 	});
-
-	// ──────────────────────────────────────────────────────────────────────
 
 	// Custom tool: list approved paths for the session
 	pi.registerTool({
@@ -89,7 +96,7 @@ export default function (pi: ExtensionAPI) {
 		},
 	});
 
-	// Custom tool: approve a path manually
+	// Custom tool: approve a path manually (provisional - may be removed if unused)
 	pi.registerTool({
 		name: "approve_path",
 		label: "Approve Path",
@@ -112,7 +119,7 @@ export default function (pi: ExtensionAPI) {
 		},
 	});
 
-	// Custom tool: clear approved paths
+	// Custom tool: clear approved paths (provisional - may be removed if unused)
 	pi.registerTool({
 		name: "clear_approved_paths",
 		label: "Clear Approved Paths",
@@ -130,65 +137,67 @@ export default function (pi: ExtensionAPI) {
 		},
 	});
 
+	// Bash: check for dangerous commands
 	pi.on("tool_call", async (event, ctx) => {
-		// --- Bash: check for dangerous patterns ---
-		if (event.toolName === "bash") {
-			const command = event.input.command as string;
-			const isDangerous = dangerousPatterns.some((p) => p.test(command));
-
-			if (isDangerous) {
-				const choice = await ctx.ui.select(
-					`⚠️ Dangerous command:\n\n  ${command}\n\nAllow?`,
-					["Yes", "No"],
-				).catch(() => undefined);
-
-				if (choice !== "Yes") {
-					return { block: true, reason: "Blocked by user" };
-				}
-			}
-
+		if (event.toolName !== "bash") {
 			return undefined;
 		}
 
-		// --- write / edit: require confirmation (unless whitelisted or previously approved) ---
-		if (event.toolName === "write" || event.toolName === "edit") {
-			const path = event.input.path as string;
+		const command = event.input.command as string;
+		const isDangerous = dangerousPatterns.some((p) => p.test(command));
 
-			// Check: whitelisted → skip
-			if (isWhitelisted(path)) {
-				return undefined;
-			}
+		if (!isDangerous) {
+			return undefined;
+		}
 
-			// Check: already approved this session → skip
-			if (hasBeenApproved(path)) {
-				return undefined;
-			}
+		const choice = await ctx.ui.select(
+			`⚠️ Dangerous command:\n\n  ${command}\n\nAllow?`,
+			["Yes", "No"],
+		).catch(() => undefined);
 
-			const relPath = getRelativePath(path, ctx.cwd);
-
-			let detail = "";
-			if (event.toolName === "write") {
-				const content = (event.input as { content: string }).content;
-				const bytes = new Blob([content]).size;
-				detail = `\n  Size: ${bytes > 1024 ? `${(bytes / 1024).toFixed(1)}KB` : `${bytes}B`}`;
-			} else if (event.toolName === "edit") {
-				const edits = (event.input as { edits: Array<{ oldText: string; newText: string }> }).edits;
-				detail = `\n  ${edits.length} edit(s)`;
-			}
-
-			const choice = await ctx.ui.select(
-				`✏️ ${event.toolName}:\n\n  ${relPath}${detail}\n\nAllow?`,
-				["Yes", "No"],
-			).catch(() => undefined);
-
-			if (choice !== "Yes") {
-				return { block: true, reason: `Blocked by user` };
-			}
-
-			// Remember this approval for the rest of the session
-			approvePath(path);
+		if (choice !== "Yes") {
+			return { block: true, reason: "Blocked by user" };
 		}
 
 		return undefined;
 	});
+
+	// Write/edit: require confirmation (unless whitelisted or previously approved)
+	pi.on("tool_call", async (event, ctx) => {
+		if (event.toolName !== "write" && event.toolName !== "edit") {
+			return undefined;
+		}
+
+		const path = event.input.path as string;
+
+		if (isWhitelisted(path)) {
+			return undefined;
+		}
+
+		if (hasBeenApproved(path)) {
+			return undefined;
+		}
+
+		const relPath = getRelativePath(path, ctx.cwd);
+		const detail = event.toolName === "write"
+			? `\n  Size: ${formatFileSize((event.input as { content: string }).content)}`
+			: `\n  ${(event.input as { edits: Array<{ oldText: string; newText: string }> }).edits.length} edit(s)`;
+
+		const choice = await ctx.ui.select(
+			`✏️ ${event.toolName}:\n\n  ${relPath}${detail}\n\nAllow?`,
+			["Yes", "No"],
+		).catch(() => undefined);
+
+		if (choice !== "Yes") {
+			return { block: true, reason: "Blocked by user" };
+		}
+
+		approvePath(path);
+		return undefined;
+	});
+}
+
+function formatFileSize(content: string): string {
+	const bytes = new Blob([content]).size;
+	return bytes > 1024 ? `${(bytes / 1024).toFixed(1)}KB` : `${bytes}B`;
 }
