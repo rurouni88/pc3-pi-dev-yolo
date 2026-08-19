@@ -1,70 +1,111 @@
 # Agent Instructions — pi-dev-yolo
 
-## Project Overview
+## Purpose
 
-This is a personal repository for developing and testing pi (pi-coding-agent) extensions and configurations. The goal is rapid iteration on extension code, testing injection guards, permission gates, and other agent behaviors.
+This repository is a development workspace for pi (pi-coding-agent) extensions. All extension work follows the workflow below.
 
-## Extension Development
+## Extension Development Workflow
 
-### Location
+### Phase 1: Create
 
-Extensions live in `extensions/`. Install globally with:
+All extensions are built in the local repo first:
 
-```bash
-cp extensions/*.ts ~/.pi/agent/extensions/
+```
+extensions/
+├── my-extension.ts        # Extension source
+└── my-extension.test.ts   # Unit tests
 ```
 
-Or test inline:
-
-```bash
-pi -e ./extensions/extension-name.ts
-```
-
-### Running Tests
-
-```bash
-npx tsx extensions/extension-name.test.ts
-```
-
-### Extension Conventions
-
-- One responsibility per file
+**Rules:**
+- One extension per pair of files (source + test)
 - Export pure functions for testing (`export function detectInjection`)
-- Tests run with `npx tsx` — no framework needed
-- Follow `CODING_STANDARDS.md` for all code
+- The extension factory function stays as `export default function (pi: ExtensionAPI)`
 
-## Security Extensions
+### Phase 2: Test
 
-Two guard extensions are installed and active:
+Run unit tests before anything else:
 
-### 1. `permission-gate.ts`
-- Blocks `rm -rf`, `sudo`, `chmod 777` in bash commands
+```bash
+npx tsx extensions/my-extension.test.ts
+```
+
+- No test framework — custom assertion runner in each test file
+- Tests must pass before proceeding to review
+- Test names describe behavior, not implementation (`returns_true_when_valid` not `test_valid`)
+
+### Phase 3: Compliance
+
+Check against `CODING_STANDARDS.md`. Key rules:
+
+| Standard | What to verify |
+|---|---|
+| **Readability** | Early returns, no nested `if/else` pyramids, intermediate variables with meaningful names |
+| **Naming** | Descriptive names, no single-letter vars (except loop counters), booleans read as assertions (`isValid`) |
+| **Function size** | One responsibility per function, no side effects mixed with computation |
+| **Comments** | Only explain *why*, never narrate *what*, no dead code |
+| **YAGNI** | No unused exports, no config for hypothetical features |
+| **DRY** | If logic is duplicated in two places, extract it |
+| **Security** | No hardcoded secrets, validate at boundaries, no command injection |
+
+If a standard is unclear, read the surrounding code first and follow existing patterns.
+
+### Phase 4: Review
+
+Before deployment, present the extension to the user with:
+
+1. **Source code** — the full `extensions/my-extension.ts`
+2. **Test output** — the result of running `npx tsx extensions/my-extension.test.ts`
+3. **Compliance notes** — any standards deviations with rationale
+4. **What it does** — a plain-language summary of the extension's behavior
+
+Wait for user approval. Do not deploy until the user explicitly confirms.
+
+### Phase 5: Deploy
+
+Only after user approval:
+
+```bash
+# Copy extension to active directory
+cp extensions/my-extension.ts ~/.pi/agent/extensions/
+
+# If replacing an existing extension, remove the old one first
+rm ~/.pi/agent/extensions/my-extension.ts
+cp extensions/my-extension.ts ~/.pi/agent/extensions/
+```
+
+Then ask the user to reload:
+
+> Extension deployed to `~/.pi/agent/extensions/`. Run `/reload` in pi to activate it.
+
+### Phase 6: Commit
+
+After deployment (or if the user declines and wants to keep working on it):
+
+```bash
+git add extensions/
+git commit --author="PC3 <rurouni88@gmail.com>" -m "PC3 <description of changes>"
+```
+
+Commit author matches existing history. Prefix every commit with `PC3 `.
+
+## Active Extensions
+
+Two guard extensions are installed and active in `~/.pi/agent/extensions/`:
+
+### `permission-gate.ts`
+- Blocks `rm -rf`, `sudo`, `chmod/chown 777` in bash
 - Requires confirmation for all `write`/`edit` operations
-- Session-scoped: approves remembered per-session
-- Whitelists: project root (`pc3-pi-dev-yolo`) and extensions dir (`~/.pi/agent/extensions`)
+- Session-scoped: remembers approved paths for the session
+- Whitelists: project root and `~/.pi/agent/extensions`
 
-### 2. `prompt-injection-guard.ts`
-- Scans all external input: user messages, RPC calls, skill/template expansions, tool results, conversation context
-- Detects: ignore-instructions, system-prompt-extraction, developer-mode, hypothetical-framing, base64/URL/HTML obfuscation bypasses
-- Auto-blocks critical severity (score ≥ 20)
-- Flags high/medium with console warnings
-
-## Commit Standards
-
-- Author: **PC3** (`rurouni88@gmail.com`) — matches existing history
-- Prefix: `PC3 ` (e.g., `PC3 Add extension for X`)
-- Follows CODING_STANDARDS.md for code quality
-
-## Workflow
-
-1. Write extension in `extensions/`
-2. Run tests: `npx tsx extensions/name.test.ts`
-3. Copy to `~/.pi/agent/extensions/` for live testing
-4. Commit with `git commit --author="PC3 <rurouni88@gmail.com>"`
-5. Push when ready
+### `prompt-injection-guard.ts`
+- Scans all external input: user messages, RPC, skills, templates, tool results, conversation context
+- Detects injection patterns: ignore-instructions, system-prompt-extraction, developer-mode, hypothetical-framing, etc.
+- Decodes obfuscation: base64, URL encoding, HTML entities
+- Auto-blocks critical severity, flags high/medium with warnings
 
 ## What This Repo Is Not
 
 - Not a production deployment
-- Not a shared library (yet)
-- A playground for extension logic that may eventually be packaged as pi packages
+- Not a shared npm package (yet)
+- A playground for extension logic, testing, and iteration
