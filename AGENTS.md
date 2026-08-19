@@ -83,7 +83,7 @@ After deployment (or if the user declines and wants to keep working on it):
 
 ```bash
 git add extensions/
-git commit --author="PC3 <rurouni88@gmail.com>" -m "PC3 <description of changes>"
+git commit -m "PC3 <description of changes>"
 ```
 
 Commit author matches existing history. Prefix every commit with `PC3 `.
