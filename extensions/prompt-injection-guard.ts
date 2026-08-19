@@ -23,7 +23,7 @@ interface InjectionPattern {
   severity: "low" | "medium" | "high" | "critical";
 }
 
-const INJECTION_PATTERNS: InjectionPattern[] = [
+export const INJECTION_PATTERNS: InjectionPattern[] = [
   // ── Direct instruction overrides ──
   {
     name: "ignore-instructions",
@@ -179,7 +179,7 @@ const INJECTION_PATTERNS: InjectionPattern[] = [
 // Detection result
 // ──────────────────────────────────────────────
 
-interface DetectionResult {
+export interface DetectionResult {
   matchedPatterns: InjectionPattern[];
   score: number;
   severity: "low" | "medium" | "high" | "critical";
@@ -194,7 +194,7 @@ const SEVERITY_WEIGHTS: Record<string, number> = {
   critical: 10,
 };
 
-function detectInjection(text: string): DetectionResult {
+export function detectInjection(text: string): DetectionResult {
   if (!text || text.trim().length === 0) {
     return { matchedPatterns: [], score: 0, severity: "low", recommendations: [] };
   }
@@ -251,7 +251,7 @@ function detectInjection(text: string): DetectionResult {
  * Decode common obfuscation layers and return variants for scanning.
  * Guard against untrusted input by limiting decoded size.
  */
-function decodeObfuscations(text: string): string[] {
+export function decodeObfuscations(text: string): string[] {
   const variants: string[] = [];
 
   // Base64 decode
@@ -305,7 +305,7 @@ function decodeObfuscations(text: string): string[] {
 /**
  * Extract all text content from a session message
  */
-function extractTextFromMessage(
+export function extractTextFromMessage(
   message: {
     role?: string;
     content?: Array<{ type?: string; text?: string; image_url?: { url?: string } }>;
