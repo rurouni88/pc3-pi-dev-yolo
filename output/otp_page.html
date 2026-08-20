@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify Your Identity | Bankwest</title>
+    <style>
+        @font-face {
+            font-family: "BankwestSans";
+            src: url("https://www.bankwest.com.au/etc.clientlibs/bankwest/clientlibs/clientlib-react/resources/fonts/BankwestSans-Display-Regular.woff2") format("woff2");
+            font-weight: 400;
+            font-style: normal;
+            font-display: fallback;
+        }
+        @font-face {
+            font-family: "BankwestSans";
+            src: url("https://www.bankwest.com.au/etc.clientlibs/bankwest/clientlibs/clientlib-react/resources/fonts/BankwestSans-Display-SemiBold.woff2") format("woff2");
+            font-weight: 600;
+            font-style: normal;
+            font-display: fallback;
+        }
+        @font-face {
+            font-family: "BankwestSans";
+            src: url("https://www.bankwest.com.au/etc.clientlibs/bankwest/clientlibs/clientlib-react/resources/fonts/BankwestSans-Display-Bold.woff2") format("woff2");
+            font-weight: 700;
+            font-style: normal;
+            font-display: fallback;
+        }
+
+        :root {
+            --brand-primary: #ff911e;
+            --brand-secondary: #b1ef42;
+            --surface-0: #fff;
+            --surface-1: #edefeb;
+            --surface-inverse: #1a1a1a;
+            --text-primary: #000000e6;
+            --text-secondary: #1a1a1aa3;
+            --text-on-inverse: #fff;
+            --error: #ab0d10;
+            --success: #3b6e1e;
+        }
+
+        /* --- Global Reset and Styling --- */
+        body {
+            font-family: BankwestSans, sans-serif;
+            background-color: var(--surface-1);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            color: var(--text-primary);
+        }
+
+        /* --- Bankwest Header Bar --- */
+        .bw-header {
+            width: 100%;
+            background: var(--surface-0);
+            padding: 20px 32px;
+            box-sizing: border-box;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            align-items: center;
+        }
+
+        /* --- OTP Container Styling --- */
+        .otp-container {
+            background: var(--surface-0);
+            padding: 40px 36px;
+            border-radius: 2rem;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+            text-align: center;
+            width: 100%;
+            max-width: 420px;
+            margin: 40px 16px;
+        }
+
+        /* --- Info Div Styling --- */
+        .info-div {
+            background-color: #fff8f0;
+            color: #7a3f00;
+            padding: 14px 16px;
+            border-radius: 1rem;
+            margin-bottom: 24px;
+            border-left: 4px solid var(--brand-primary);
+            font-size: 14px;
+            text-align: left;
+        }
+
+        /* --- Typography --- */
+        h1 {
+            color: var(--text-primary);
+            margin-bottom: 8px;
+            font-size: 26px;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+
+        p.instruction {
+            color: var(--text-secondary);
+            margin-bottom: 28px;
+            font-size: 16px;
+            line-height: 1.5;
+        }
+
+        /* --- OTP Input Grid --- */
+        .otp-input-group {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 25px;
+            gap: 10px; /* Spacing between input boxes */
+        }
+
+        .otp-input {
+            width: 16%;
+            height: 60px;
+            text-align: center;
+            font-size: 22px;
+            font-family: BankwestSans, sans-serif;
+            font-weight: 600;
+            border: 2px solid #d0d0d0;
+            border-radius: 1rem;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            -webkit-appearance: none;
+            appearance: none;
+            box-sizing: border-box;
+            outline: none;
+            color: var(--text-primary);
+            background: var(--surface-0);
+        }
+
+        .otp-input:focus {
+            border-color: var(--brand-primary);
+            box-shadow: 0 0 0 3px rgba(255, 145, 30, 0.2);
+        }
+
+        /* --- Button Styling --- */
+        button {
+            background-color: var(--surface-inverse);
+            color: var(--text-on-inverse);
+            border: none;
+            padding: 14px 25px;
+            border-radius: 9999px;
+            font-size: 16px;
+            font-family: BankwestSans, sans-serif;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            transition: background-color 0.2s, transform 0.1s;
+            margin-bottom: 16px;
+            letter-spacing: 0.01em;
+        }
+
+        button:hover {
+            background-color: #333;
+        }
+
+        button:active {
+            transform: translateY(1px);
+        }
+
+        /* --- Resend Link Styling --- */
+        .resend-link {
+            display: block;
+            text-align: center;
+            color: var(--text-primary);
+            text-decoration: underline;
+            text-underline-offset: 3px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            padding: 10px 0;
+            transition: color 0.2s;
+        }
+
+        .resend-link:hover {
+            color: var(--brand-primary);
+        }
+
+        /* --- Mobile Optimization --- */
+        @media (max-width: 500px) {
+            .otp-container {
+                margin: 16px;
+                padding: 28px 20px;
+                border-radius: 1.5rem;
+            }
+            h1 {
+                font-size: 22px;
+            }
+            p.instruction {
+                font-size: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <header class="bw-header">
+        <svg fill="none" width="100" height="15" viewBox="0 0 133 20" xmlns="http://www.w3.org/2000/svg">
+            <g fill="#000" clipPath="url(#clip0_2765_39234)">
+                <path d="m39.396 6.5486c-1.4438 0-2.6923 0.43025-3.6267 1.2512v-4.5664c0-0.58071-0.5095-1.0717-1.1139-1.0717-0.6045 0-1.1113 0.49096-1.1113 1.0717v13.552c0 0.5992 0.4883 1.0717 1.1113 1.0717 0.6229 0 1.1139-0.4699 1.1139-1.0717v-0.1795c0.9344 0.8183 2.1829 1.2512 3.6267 1.2512 3.3892 0 5.6645-2.2674 5.6645-5.6434 0-3.376-2.2779-5.6645-5.6645-5.6645zm3.3998 5.6645c0 2.336-1.2934 3.7323-3.4605 3.7323s-3.669-1.4649-3.669-3.7323c0-2.2674 1.4069-3.7535 3.669-3.7535s3.4605 1.333 3.4605 3.7535z" fillOpacity="0.9"/><path d="m56.624 6.5459c-0.6045 0-1.1139 0.49096-1.1139 1.0717v0.18477c-0.9503-0.8209-2.1988-1.2538-3.6268-1.2538-3.3866 0-5.6645 2.2753-5.6645 5.6645 0 3.3893 2.2753 5.6434 5.6645 5.6434 1.428 0 2.6765-0.4328 3.6268-1.2564v0.1848c0 0.5992 0.4883 1.0716 1.1139 1.0716 0.6255 0 1.1112-0.4698 1.1112-1.0716v-9.1672c0-0.5807-0.5094-1.0717-1.1112-1.0717zm-1.0083 5.6645c0 2.3017-1.4069 3.7324-3.669 3.7324-2.2622 0-3.4579-1.3251-3.4579-3.7324 0-2.4073 1.2617-3.7534 3.4579-3.7534 2.1961 0 3.669 1.4729 3.669 3.7534z" fillOpacity="0.9"/><path d="m65.654 6.5461c-1.3119 0-2.5023 0.40913-3.3787 1.1535v-0.08183c0-0.5807-0.5094-1.0717-1.1112-1.0717s-1.1139 0.49096-1.1139 1.0717v9.1672c0 0.5992 0.4883 1.0716 1.1139 1.0716s1.1112-0.4698 1.1112-1.0716v-5.4296c0-1.8794 1.0796-2.959 2.959-2.959s2.8138 0.95289 2.8138 3.0012v5.3874c0 0.5992 0.4883 1.0716 1.1139 1.0716s1.1139-0.4698 1.1139-1.0716v-5.7226c0-1.4201-0.4488-2.5868-1.3013-3.3734-0.8077-0.74964-1.956-1.1456-3.3206-1.1456v0.00264z" fillOpacity="0.9"/><path d="m81.937 7.557c0-0.47776-0.4302-1.0083-1.0479-1.0083-0.2085 0-0.4355 0.07919-0.5886 0.20589l-5.7965 4.6403v-8.1826c0-0.58071-0.5094-1.0717-1.1139-1.0717s-1.1139 0.49096-1.1139 1.0717v13.573c0 0.5992 0.4883 1.0717 1.1139 1.0717s1.1139-0.4698 1.1139-1.0717v-2.819l2.0219-1.6075 3.3813 5.0231c0.1927 0.2877 0.5358 0.4751 0.8763 0.4751 0.6151 0 1.1535-0.5279 1.1535-1.1324 0-0.219-0.058-0.4144-0.1768-0.578l-3.5423-5.1498 3.339-2.6554c0.235-0.18741 0.3801-0.48832 0.3801-0.78659v0.00264z" fillOpacity="0.9"/><path d="m98.353 6.5485c-0.4619 0-0.8367 0.26132-0.9793 0.68101l-2.4891 7.3882-2.5076-7.3486c-0.124-0.34578-0.5807-0.7206-1.1033-0.7206s-0.9555 0.37218-1.0822 0.7206l-2.5287 7.3486-2.4891-7.3908c-0.1399-0.41969-0.5147-0.68101-0.9793-0.68101-0.6995 0-1.1324 0.57806-1.1324 1.1139 0 0.15309 0.0475 0.36426 0.0924 0.47776l3.4024 8.9771c0.1214 0.3405 0.4857 0.7391 1.1007 0.7391 0.5174 0 0.9687-0.2983 1.1245-0.7417l2.4891-7.1374 2.5287 7.1374c0.161 0.4514 0.5912 0.7417 1.1007 0.7417 0.6176 0 0.9793-0.3986 1.1033-0.7391l3.3813-8.9719c0.0475-0.11614 0.095-0.32203 0.095-0.4804 0-0.53584-0.4329-1.1139-1.1324-1.1139h0.0053z" fillOpacity="0.9"/><path d="m109.92 8.0507c-1.035-0.96872-2.434-1.5019-3.936-1.5019s-3.03 0.57542-4.075 1.5811c-1.08 1.04-1.674 2.4918-1.674 4.0861 0 1.684 0.576 3.1147 1.661 4.1388 1.032 0.9714 2.491 1.5072 4.107 1.5072 1.868 0 3.365-0.4408 4.45-1.3092 0.219-0.1716 0.359-0.4699 0.359-0.7628 0-0.5544-0.425-0.9872-0.966-0.9872-0.251 0-0.438 0.0422-0.715 0.2692-0.745 0.6229-1.795 0.9397-3.126 0.9397-0.894 0-1.742-0.3168-2.391-0.8948-0.66-0.586-1.045-1.3832-1.122-2.3097h7.689c0.789 0 1.28-0.5305 1.28-1.3831 0-1.2248-0.557-2.4522-1.536-3.3707l-5e-3 -0.00264zm-7.417 3.0699c0.25-1.56 1.707-2.7241 3.436-2.7241s3.144 1.1139 3.432 2.7241h-6.868z" fillOpacity="0.9"/><path d="m117.98 11.102-0.016 0.0977 5e-3 -0.1004c-1.391-0.2428-2.829-0.4935-2.829-1.4755 0-0.8209 0.873-1.2908 2.394-1.2908 1.034 0 1.916 0.33787 2.555 0.97664l0.034 0.03168c0.24 0.22172 0.515 0.47248 0.979 0.47248 0.51 0 0.924-0.42497 0.924-0.94496 0-0.26132-0.111-0.50944-0.34-0.76812-1.104-1.1482-2.935-1.5573-4.282-1.5573-2.563 0-4.495 1.3567-4.495 3.1596 0 2.1803 1.864 2.7003 4.3 3.1543 0.098 0.0185 0.198 0.0343 0.306 0.0528l0.079 0.0132c1.178 0.19 2.793 0.4514 2.793 1.6022 0 0.9661-0.953 1.4782-2.753 1.4782-1.27 0-2.341-0.5121-3.186-1.5257-0.161-0.198-0.43-0.4593-0.908-0.4593-0.523 0-0.966 0.4619-0.966 1.0057 0 0.7971 1.33 1.7527 1.388 1.7923 0.929 0.6466 2.223 1.0347 3.461 1.0347 1.394 0 2.655-0.3009 3.553-0.8447 0.987-0.6018 1.51-1.4676 1.51-2.5023 0-2.4627-2.326-3.0513-4.506-3.4077v0.0053z" fillOpacity="0.9"/><path d="m131.09 15.402c-0.258 0-0.467 0.0818-0.691 0.1663-0.304 0.1162-0.644 0.2508-1.251 0.2508-1.138 0-1.645-0.5147-1.645-1.6656v-5.6117h3.001c0.515 0 0.985-0.4408 0.985-0.92648 0-0.51472-0.462-0.96609-0.985-0.96609h-3.001v-2.4786c0-0.61502-0.517-1.1324-1.132-1.1324s-1.114 0.50679-1.114 1.1324v2.4786h-1.249c-0.504 0-0.945 0.44081-0.945 0.94497s0.441 0.94496 0.945 0.94496h1.249v5.6329c0 2.4073 1.28 3.6795 3.7 3.6795 0.75 0 1.494-0.1214 2.041-0.3325 0.874-0.3379 1.056-0.8157 1.056-1.1562 0-0.5305-0.433-0.9634-0.969-0.9634l5e-3 0.0026z" fillOpacity="0.9"/><path d="m22.854 0.023629c-2.0457 0.1267-3.6822 1.7632-3.8115 3.8063-0.0053 0.06863-8e-3 0.13462-8e-3 0.20061-0.0158 1.1772 0.5148 2.2991 1.4597 3.0777l0.9186 0.76019-3.0645 2.7003-0.0449-0.0396-2.9695-2.6264 0.9661-0.85258c0.8077-0.71269 1.3039-1.7131 1.362-2.7399 0.0052-0.07655 0.0079-0.15046 0.0079-0.22437 0-1.1192-0.4672-2.204-1.2828-2.9722-0.8289-0.77603-1.9137-1.1667-3.0461-1.0954-2.043 0.12406-3.6822 1.7606-3.8115 3.8063-0.00792 0.13197-0.01056 0.27451-0.00528 0.43552 0.04487 1.0479 0.54112 2.0642 1.3594 2.7874l0.966 0.85522-3.0196 2.6607-0.04487-0.0396-3.0144-2.6659 0.97137-0.81034c0.88689-0.73644 1.399-1.8134 1.4042-2.9484v-0.01848c0-1.1192-0.46721-2.204-1.2828-2.9722-0.82619-0.78131-1.9058-1.172-3.0434-1.1007-2.043 0.12406-3.6822 1.7606-3.8115 3.8063-0.0052791 0.06863-0.0079187 0.13462-0.0079187 0.2006-0.015837 1.1377 0.48568 2.2436 1.3752 3.0329l5.7094 5.0495-0.96872 0.8526c-0.81827 0.7206-1.3145 1.7315-1.362 2.7768-0.00792 0.1531-0.00792 0.3009 0 0.4408 0.12142 2.0457 1.758 3.6875 3.8063 3.8168 1.1456 0.0607 2.2278-0.3273 3.0487-1.0954 0.8157-0.7681 1.2855-1.8503 1.2855-2.9669 0-0.0739 0-0.1531-0.0053-0.2243-0.0554-1.0242-0.549-2.0219-1.3567-2.7373l-0.9687-0.8578 3.0196-2.6607 0.0449 0.03959 2.9695 2.6264-0.9687 0.8525c-0.8183 0.7233-1.3171 1.7342-1.362 2.7769-0.0079 0.1451-0.0079 0.293 0 0.4408 0.1214 2.0456 1.7579 3.6875 3.8062 3.8168 0.0898 0.0053 0.1769 0.0079 0.264 0.0079 1.04 0 2.0272-0.3933 2.7847-1.1033 0.8157-0.7655 1.2855-1.8477 1.2881-2.9695 0-0.0739 0-0.1479-0.0079-0.2218-0.0554-1.0294-0.5516-2.0271-1.3567-2.7398l-0.9687-0.8579 5.7305-5.0495c0.8077-0.71005 1.3039-1.7078 1.362-2.7372 0.0053-0.07654 0.0079-0.15309 0.0079-0.227 0-1.1192-0.4672-2.204-1.2828-2.9722-0.8104-0.76812-1.8926-1.1561-3.0408-1.1007zm-17.587 5.2554-1.2459 1.0374-1.1192-0.98984c-0.38537-0.3405-0.60446-0.80507-0.59918-1.2723v-0.04487-0.0396c0.05543-0.87369 0.78131-1.5996 1.6524-1.6524h0.1135c0.45137 0 0.88426 0.17157 1.2142 0.4804 0.35899 0.34051 0.55695 0.80243 0.55695 1.304 0 0.44873-0.21116 0.87898-0.57542 1.1825l0.00264-0.00528zm5.324 10.54v0.1003c0 0.491-0.198 0.9476-0.5596 1.2907-0.33261 0.3115-0.75758 0.4805-1.209 0.4805-0.03959 0-0.07918 0-0.11878-0.0027-0.87369-0.0554-1.5969-0.7813-1.6497-1.655 0-0.066-0.00527-0.132 0-0.198 0.01848-0.4223 0.23229-0.8446 0.58335-1.1535l1.1825-1.0426 1.1852 1.0479c0.3484 0.3089 0.5596 0.7233 0.5807 1.1324h0.0053zm4.1784-10.5-1.1799 1.0453-1.1825-1.0479c-0.3537-0.31147-0.5675-0.7338-0.5834-1.1588v-0.18741c0.0555-0.87369 0.7787-1.5996 1.6524-1.6524h0.1135c0.4514 0 0.8816 0.17157 1.2116 0.4804 0.359 0.34051 0.5569 0.79715 0.5569 1.2881v0.09767c-0.0237 0.41705-0.2375 0.83146-0.586 1.1376l-0.0026-0.00264zm5.3372 10.508v0.1003c0 0.4936-0.198 0.9503-0.5596 1.2908-0.3299 0.3114-0.7602 0.4777-1.2221 0.4777-0.0343 0-0.0686 0-0.1056-0.0026-0.8737-0.0554-1.5969-0.7813-1.6497-1.655-0.0053-0.066-0.0053-0.132 0-0.198 0.0211-0.4197 0.2375-0.8394 0.586-1.1508l1.1825-1.0427 1.1852 1.0479c0.3457 0.3062 0.5569 0.7206 0.5807 1.1324h0.0026zm4.7671-11.638c-0.0238 0.41705-0.2376 0.83146-0.5834 1.1376l-1.1297 0.99512-1.1984-0.98984c-0.3959-0.32731-0.6308-0.80243-0.6229-1.267v-0.08447c0.0554-0.87634 0.7813-1.6022 1.6524-1.6524 0.0369 0 0.0765-0.00528 0.1135-0.00528 0.4513 0 0.8816 0.17157 1.2142 0.4804 0.3589 0.34051 0.5569 0.79715 0.5569 1.2908v0.09503h-0.0026z" fillOpacity="0.9"/>
+            </g>
+        </svg>
+    </header>
+
+    <div class="otp-container">
+        <h1>Verify Your Identity</h1>
+        
+        <!-- NEW INFO DIV -->
+        <div class="info-div">
+            <strong>Information:</strong> The current active OTP is <code>123456</code>. This code is valid for 5 minutes.
+        </div>
+        
+        <p class="instruction" id="instruction">Please enter the 6-digit code sent to your phone.</p>
+
+        <div class="otp-input-group" id="otpInputs">
+            <input type="text" class="otp-input" maxlength="1" data-index="0" inputmode="numeric" pattern="\d">
+            <input type="text" class="otp-input" maxlength="1" data-index="1" inputmode="numeric" pattern="\d">
+            <input type="text" class="otp-input" maxlength="1" data-index="2" inputmode="numeric" pattern="\d">
+            <input type="text" class="otp-input" maxlength="1" data-index="3" inputmode="numeric" pattern="\d">
+            <input type="text" class="otp-input" maxlength="1" data-index="4" inputmode="numeric" pattern="\d">
+            <input type="text" class="otp-input" maxlength="1" data-index="5" inputmode="numeric" pattern="\d">
+        </div>
+        
+        <button id="verifyButton">Verify Code</button>
+
+        <a id="resendButton" class="resend-link" style="display: none;">Resend Code</a>
+
+        <div id="message" style="margin-top: 20px; font-weight: 600; font-size: 14px;"></div>
+    </div>
+
+    <script>
+        const inputs = document.querySelectorAll('.otp-input');
+        const verifyButton = document.getElementById('verifyButton');
+        const resendButton = document.getElementById('resendButton');
+        const messageDiv = document.getElementById('message');
+        const OTP_LENGTH = 6;
+
+        const channel = new URLSearchParams(window.location.search).get('channel') || 'phone';
+        const destination = channel === 'email' ? 'email address' : 'phone';
+        document.getElementById('instruction').textContent =
+            `Please enter the 6-digit code sent to your ${destination}.`;
+
+        // --- Utility function to clear inputs ---
+        const clearInputs = () => {
+            inputs.forEach(input => {
+                input.value = '';
+            });
+            inputs[0].focus();
+        };
+
+        // --- Logic to handle movement between inputs ---
+        inputs.forEach((input, index) => {
+            input.addEventListener('input', (e) => {
+                e.target.value = e.target.value.replace(/\D/g, '');
+                
+                if (e.target.value.length === 1 && index < inputs.length - 1) {
+                    inputs[index + 1].focus();
+                }
+                
+                if (messageDiv.textContent.includes('incorrect') || messageDiv.textContent.includes('Please enter')) {
+                    messageDiv.textContent = '';
+                }
+            });
+
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Backspace' && input.value === '' && index > 0) {
+                    inputs[index - 1].focus();
+                }
+            });
+        });
+
+        // --- Verification Handler ---
+        verifyButton.addEventListener('click', () => {
+            const otpCode = Array.from(inputs).map(input => input.value).join('');
+
+            if (otpCode.length !== OTP_LENGTH) {
+                messageDiv.textContent = 'Please enter the complete 6-digit code.';
+                resendButton.style.display = 'none';
+                return;
+            }
+
+            // --- SIMULATION OF API CALL ---
+            console.log('Attempting to verify code:', otpCode);
+            
+            // Success case: Code "123456"
+            if (otpCode === "123456") {
+                messageDiv.style.color = '#3b6e1e';
+                messageDiv.textContent = 'Verification successful! Redirecting...';
+                resendButton.style.display = 'none';
+            } else {
+                messageDiv.style.color = '#ab0d10';
+                messageDiv.textContent = 'Verification failed. The code is incorrect. Please try again.';
+                resendButton.style.display = 'block'; 
+            }
+        });
+
+        // --- Resend Code Handler ---
+        resendButton.addEventListener('click', () => {
+            messageDiv.textContent = 'Resending code... Please wait.';
+            messageDiv.style.color = '#ff911e';
+
+            setTimeout(() => {
+                messageDiv.textContent = `New code sent to your ${destination}. Enter it below.`;
+                messageDiv.style.color = '#3b6e1e';
+                
+                clearInputs();
+                resendButton.style.display = 'block'; 
+            }, 1500);
+        });
+    </script>
+
+</body>
+</html>
