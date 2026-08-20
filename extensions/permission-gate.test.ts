@@ -90,19 +90,23 @@ function testGetRelativePath(): void {
 
 function testIsWhitelisted(): void {
   const home = process.env.HOME ?? "/Users/paul";
-  const projectPath = `${home}/Dev/GIT/pc3-pi-dev-yolo`;
+  const cwd = process.cwd();
   const extensionsPath = `${home}/.pi/agent/extensions`;
 
-  assert(isWhitelisted(projectPath), "returns true for project root");
-  assert(isWhitelisted(`${projectPath}/extensions/permission-gate.ts`), "returns true for file in project");
-  assert(isWhitelisted(`${projectPath}/src/nested/file.ts`), "returns true for deeply nested file in project");
-
+  // Static whitelist (extensions dir) always works
   assert(isWhitelisted(extensionsPath), "returns true for extensions directory");
   assert(isWhitelisted(`${extensionsPath}/my-ext.ts`), "returns true for file in extensions");
 
-  assert(!isWhitelisted("/tmp/something.ts"), "returns false for /tmp path");
-  assert(!isWhitelisted("/Users/paul/other-project/file.ts"), "returns false for unrelated project");
-  assert(!isWhitelisted("/etc/passwd"), "returns false for system path");
+  // Dynamic cwd whitelist
+  assert(isWhitelisted(cwd, cwd), "returns true for cwd itself");
+  assert(isWhitelisted(`${cwd}/extensions/permission-gate.ts`, cwd), "returns true for file in cwd project");
+  assert(isWhitelisted(`${cwd}/src/nested/file.ts`, cwd), "returns true for deeply nested file in cwd project");
+
+  // Unrelated paths should not be whitelisted
+  assert(!isWhitelisted("/tmp/something.ts"), "returns false for /tmp path without cwd");
+  assert(!isWhitelisted("/tmp/something.ts", cwd), "returns false for /tmp path with cwd");
+  assert(!isWhitelisted("/Users/paul/other-project/file.ts", cwd), "returns false for unrelated project");
+  assert(!isWhitelisted("/etc/passwd", cwd), "returns false for system path");
 }
 
 function testDangerousPatterns(): void {

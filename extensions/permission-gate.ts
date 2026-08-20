@@ -23,14 +23,11 @@ export { getRelativePath, isWhitelisted, dangerousPatterns };
 export { approvedPaths, approvePath, resetSession };
 // ──────────────────────────────────────────────────────────────────────
 
-// ── Whitelist: absolute folder paths that bypass the permission prompt ─
-// Files in these folders (or subfolders) won't trigger a confirmation.
+// ── Whitelist: base folders that always bypass the permission prompt ─
+// The current working directory (pi's runtime dir) is added dynamically at runtime.
 const homeDir = process.env.HOME;
-const whitelistFolders: string[] = homeDir
-	? [
-			`${homeDir}/Dev/GIT/pc3-pi-dev-yolo`,
-			`${homeDir}/.pi/agent/extensions`,
-	  ]
+const staticWhitelist: string[] = homeDir
+	? [`${homeDir}/.pi/agent/extensions`]
 	: [];
 // ──────────────────────────────────────────────────────────────────────
 
@@ -51,11 +48,17 @@ function getRelativePath(path: string, cwd: string): string {
 	return path;
 }
 
-function isWhitelisted(path: string): boolean {
-	return whitelistFolders.some((folder) => {
-		// absolute path match
-		return path === folder || path.startsWith(folder + "/");
-	});
+function isWhitelisted(path: string, cwd?: string): boolean {
+	// Check static whitelist (e.g., ~/.pi/agent/extensions)
+	const inStatic = staticWhitelist.some((folder) => path === folder || path.startsWith(folder + "/"));
+	if (inStatic) return true;
+
+	// Check dynamic cwd (pi's runtime directory)
+	if (cwd) {
+		return path === cwd || path.startsWith(cwd + "/");
+	}
+
+	return false;
 }
 
 function hasBeenApproved(path: string): boolean {
@@ -170,7 +173,7 @@ export default function (pi: ExtensionAPI) {
 
 		const path = event.input.path as string;
 
-		if (isWhitelisted(path)) {
+		if (isWhitelisted(path, ctx.cwd)) {
 			return undefined;
 		}
 
